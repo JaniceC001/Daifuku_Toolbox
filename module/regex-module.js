@@ -4,6 +4,7 @@ window.RegexModule = {
     // 返回工具的 HTML 結構
     getHTML: () => `
         <div class="regex-tool-wrapper">
+            <style id="regex-dynamic-styles"></style>
             <style>
             /* --- 結構與佈局樣式 (無顏色) --- */
             .regex-container { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; max-width: 100%; }
@@ -204,13 +205,16 @@ window.RegexModule = {
         window.addEventListener('click', (event) => { if (event.target == helpModal) { helpModal.style.display = 'none'; } });
 
         // --- 核心函數 ---
+        // 在 regex-module.js 的 init() 函數中
+
         function updatePreviews() {
             const regexPattern = regexInput.value;
             const regexFlags = flagsInput.value;
             const replacementString = replacementInput.value;
+            const finalReplacementString = replacementString.replace(/\{\{match\}\}/gi, '$$&');
             const depth = parseInt(depthInput.value, 10) || 0;
             let regex;
-            
+
             try {
                 regex = new RegExp(regexPattern, regexFlags);
                 errorMessage.textContent = '';
@@ -226,23 +230,47 @@ window.RegexModule = {
 
             sourceTexts.forEach((source, index) => {
                 const shouldProcess = index < processEndIndex && regexPattern !== '';
-                
                 if (shouldProcess) {
                     const escapedSource = escapeHTML(source);
                     const highlighted = escapedSource.replace(regex, match => `<span class="regex-highlight">${escapeHTML(match)}</span>`);
                     matchPreviewParts.push(highlighted);
 
-                    const replaced = source.replace(regex, replacementString);
+                    const replaced = source.replace(regex, finalReplacementString);
                     replacementPreviewParts.push(replaced);
                 } else {
                     matchPreviewParts.push(escapeHTML(source));
                     replacementPreviewParts.push(escapeHTML(source));
                 }
             });
+            
+            // --- 這是新的核心邏輯 ---
 
+            // 1. 將所有替換結果合併成一個大的 HTML 字串
+            let finalReplacementHTML = replacementPreviewParts.join('<hr style="border:0; border-top: 1px solid #eee; margin: 5px 0;">');
+            
+            // 2. 準備一個正規表示式來尋找和捕獲 <style> 標籤的內容
+            const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+            let extractedStyles = '';
+            let match;
+
+            // 3. 循環遍歷，提取所有 CSS 規則
+            while ((match = styleRegex.exec(finalReplacementHTML)) !== null) {
+                extractedStyles += match[1] + '\n'; // match[1] 是捕獲組，也就是 style 標籤內的內容
+            }
+
+            // 4. 將 <style> 標籤從原始 HTML 字串中徹底移除
+            const htmlWithoutStyleTags = finalReplacementHTML.replace(styleRegex, '');
+
+            // 5. 找到我們預設的動態 style 標籤，並將提取的 CSS 規則放進去
+            const dynamicStyleElement = document.getElementById('regex-dynamic-styles');
+            if (dynamicStyleElement) {
+                // 使用 .textContent 是最安全的注入方式，可以防止樣式內容中的 XSS
+                dynamicStyleElement.textContent = extractedStyles;
+            }
+            
+            // 6. 最後，只對不含 <style> 標籤的 HTML 進行清理和渲染
             matchPreview.innerHTML = matchPreviewParts.join('<hr style="border:0; border-top: 1px dashed #ccc; margin: 5px 0;">');
-            const finalReplacementHTML = replacementPreviewParts.join('<hr style="border:0; border-top: 1px solid #eee; margin: 5px 0;">');
-            replacementPreview.innerHTML = sanitizeHtml(finalReplacementHTML);
+            replacementPreview.innerHTML = sanitizeHtml(htmlWithoutStyleTags);
         }
 
         // --- 輔助函數 ---
@@ -252,20 +280,39 @@ window.RegexModule = {
         }
 
         function sanitizeHtml(htmlString) {
+            const allowedTags = ['p', 'span', 'div', 'strong', 'em', 'u', 'b', 'i', 'br', 'hr', 'ul', 'ol', 'li', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'code', 'pre', 'blockquote'];
+            const allowedAttributes = ['style', 'class', 'id', 'href', 'src', 'alt', 'title', 'target'];
+
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlString, 'text/html');
-            const forbiddenTags = ['script', 'iframe', 'object', 'embed', 'form', 'style', 'link', 'meta'];
-            
-            doc.querySelectorAll(forbiddenTags.join(',')).forEach(el => el.remove());
-            doc.querySelectorAll('*').forEach(el => {
-                for (const attr of [...el.attributes]) {
-                    if (attr.name.toLowerCase().startsWith('on')) {
+            const allElements = doc.body.querySelectorAll('*');
+
+            allElements.forEach(el => {
+                // 1. 檢查並移除不被允許的標籤
+                // 注意：DOMParser 會自動補齊 html, head, body，我們不用管它們
+                if (!allowedTags.includes(el.tagName.toLowerCase())) {
+                    // 將不允許的標籤內容提取出來，替換掉標籤本身
+                    // 這樣 '<b><script>alert(1)</script></b>' 會變成 '<b>alert(1)</b>' 而不是直接消失
+                    el.outerHTML = el.innerHTML;
+                    return; // 已替換，跳過後續屬性檢查
+                }
+
+                // 2. 遍歷並移除不被允許的屬性
+                // 使用 Array.from 創建副本，因為直接修改集合會導致問題
+                Array.from(el.attributes).forEach(attr => {
+                    const attrName = attr.name.toLowerCase();
+                    // 移除 on* 事件處理器 和 不在白名單的屬性
+                    if (attrName.startsWith('on') || !allowedAttributes.includes(attrName)) {
                         el.removeAttribute(attr.name);
                     }
-                }
+                    
+                    // 3. 特別檢查 href 和 src 屬性，防止 javascript: 協議
+                    if ((attrName === 'href' || attrName === 'src') && attr.value.toLowerCase().startsWith('javascript:')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
             });
-            // DOMParser 會自動加上 <html><head></head><body>...</body></html>
-            // 我們只需要 body 內的內容
+
             return doc.body.innerHTML;
         }
 
