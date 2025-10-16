@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daifuku Toolbox</title>
+    <link id="theme-stylesheet" rel="stylesheet" type="text/css" href="styleDarkBlue.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 左側選單 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="header-title">
+                    <h1>Daifuku Toolbox</h1>
+                    <p>v0.1</p>
+                </div>
+
+                <div class="settings-container">
+                    <button id="settingsBtn" class="settings-btn" title="設定">⚙️</button>
+                    <div id="settingsMenu" class="settings-menu">
+                        <button id="switchThemeBtn">切換為淺色主題</button>
+                        <button id="clearCacheBtn">清除暫存資料</button>
+                    </div>
+                </div>
+            </div>
+            
+
+            <div class="search-box">
+                <input type="text" placeholder="搜尋工具..." id="searchInput">
+            </div>
+
+            <nav>
+                <div class="menu-section">
+                    <div class="menu-title">網站資訊</div>
+                    <div class="menu-item active" onclick="loadContent('intro')">網站介紹</div>
+                    <!-- <div class="menu-item" onclick="loadContent('guide')">快速導覽</div> -->
+                    <div class="menu-item" onclick="loadContent('terms')">更新日志</div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-title">文字工具</div>
+                    <div class="menu-item" onclick="loadContent('regex-replacer')">Regex工具</div>
+                    <!-- <div class="menu-item" onclick="loadContent('cat1-2')">JSON 格式化</div>
+                    <div class="menu-item" onclick="loadContent('cat1-3')">隨機密碼生成器</div> -->
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-title">工具2</div>
+                    <!-- <div class="menu-item" onclick="loadContent('cat2-1')">Base64 編碼/解碼</div>
+                    <div class="menu-item" onclick="loadContent('cat2-2')">URL 編碼/解碼</div>
+                    <div class="menu-item" onclick="loadContent('cat2-3')">時間戳轉換</div> -->
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-title">其他工具</div>
+                    <!-- <div class="menu-item" onclick="loadContent('cat3-1')">JSON</div>
+                    <div class="menu-item" onclick="loadContent('cat3-2')">QR Code 生成器</div> -->
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主內容區 -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2 id="contentTitle">網站介紹</h2>
+            </div>
+
+            <div class="content-body" id="contentBody">
+                <!-- 初始內容將由 JS 載入 -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const themes = {
+            dark: 'styleDarkBlue.css',
+            light: 'styleLightBlue.css'
+        };
+        
+        // 內容數據
+        const contentData = {
+            'intro': {
+                title: '網站介紹',
+                content: `
+                    <h3>歡迎使用Daifuku Toolbox</h3>
+                    <p>就是一個普通的工具箱，想到什麼才做什麼，久久更新一次很正常（欸</p>
+                    <h3>快速導覽</h3>
+                    <div class="info-box"><strong>Regex工具:</strong> 輸入你的Regex表達式，即可以瀏覽其效果（支援HTML），附有取代內容、最小深度、多則範本功能。</div>
+                    <div class="info-box"><strong>尚未開發:</strong> /</div>
+                `
+            },
+            'guide': {
+                title: '如何使用',
+                content: `
+                    <h3>選擇工具</h3>
+                    <p>使用左側選單可以在不同工具之間快速切換。選單已進行分類,方便您尋找。</p>
+                    <h3>搜尋功能</h3>
+                    <p>頂部的搜尋框可以幫助您快速找到特定工具。輸入工具名稱或關鍵字即可。</p>
+                    <h3>開始使用</h3>
+                    <p>點擊選單中的工具後,右側主內容區域將會載入該工具的操作介面,您可以直接開始使用。</p>
+                `
+            },
+            'terms': {
+                title: '更新日誌',
+                content: `
+                    <h3>版本更新記錄</h3>
+                    
+                    <div class="info-box">
+                        <p><strong>v0.1</strong></p>
+                        - 新增 Regex工具
+                    </div>
+                `
+            },
+            'regex-replacer': {
+                title: 'Regex 批量替換工具',
+                content: `
+                    <div id="regex-tool-mount"></div>
+                `,
+                onLoad: () => {
+                    // 動態載入 regex 模組的 script
+                    if (!window.RegexModule) {
+                        const script = document.createElement('script');
+                        script.src = 'module/regex-module.js';
+                        script.onload = () => {
+                            const mountPoint = document.getElementById('regex-tool-mount');
+                            if (mountPoint && window.RegexModule) {
+                                mountPoint.innerHTML = window.RegexModule.getHTML();
+                                window.RegexModule.init();
+                            }
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        const mountPoint = document.getElementById('regex-tool-mount');
+                        if (mountPoint) {
+                            mountPoint.innerHTML = window.RegexModule.getHTML();
+                            window.RegexModule.init();
+                        }
+                    }
+                }
+            },
+            'cat1-2': {
+                title: 'JSON 格式化',
+                content: '<h3>工具說明</h3><p>提供 JSON 字串的美化、格式化、壓縮及驗證功能。貼上您的 JSON 內容即可開始。</p>'
+            },
+            'cat1-3': {
+                title: '隨機密碼生成器',
+                content: '<h3>工具說明</h3><p>快速生成高強度的隨機密碼,您可以自訂密碼長度、是否包含數字、符號等。</p>'
+            },
+            'cat2-1': {
+                title: 'Base64 編碼/解碼',
+                content: '<h3>工具說明</h3><p>用於將文字或檔案內容進行 Base64 編碼,或將 Base64 編碼後的字串解碼回原始內容。</p>'
+            },
+            'cat2-2': {
+                title: 'URL 編碼/解碼',
+                content: '<h3>工具說明</h3><p>對 URL 中的特殊字元進行編碼 (Percent-encoding) 或解碼,以便在網路中安全地傳輸。</p>'
+            },
+            'cat2-3': {
+                title: '時間戳轉換',
+                content: '<h3>工具說明</h3><p>在 Unix 時間戳 (Timestamp) 和標準日期時間格式之間進行互相轉換。</p>'
+            },
+            'cat3-1': {
+                title: '顏色選擇器',
+                content: '<h3>工具說明</h3><p>提供視覺化的顏色選擇器,並顯示對應的 HEX、RGB、HSL 等顏色代碼。</p>'
+            },
+            'cat3-2': {
+                title: 'QR Code 生成器',
+                content: '<h3>工具說明</h3><p>輸入文字、網址或其他資訊,即可快速生成對應的 QR Code 圖像。</p>'
+            }
+        };
+
+        
+
+        function loadContent(id) {
+            const data = contentData[id] || contentData['intro'];
+            document.getElementById('contentTitle').textContent = data.title;
+            document.getElementById('contentBody').innerHTML = data.content;
+            
+            if (data.onLoad && typeof data.onLoad === 'function') {
+                setTimeout(data.onLoad, 0);
+            }
+        }
+
+        function setTheme(themeName) {
+            const themeStylesheet = document.getElementById('theme-stylesheet');
+            const switchThemeBtn = document.getElementById('switchThemeBtn');
+            
+            const currentThemePath = themes[themeName];
+            themeStylesheet.setAttribute('href', currentThemePath);
+            localStorage.setItem('theme', themeName);
+            
+            if (switchThemeBtn) { // 確保按鈕存在
+                 switchThemeBtn.textContent = themeName === 'dark' ? '切換為淺色主題' : '切換為深色主題';
+            }
+        }
+
+        // =================================================================
+        // 3. 事件監聽與初始化 (所有DOM操作都在這裡)
+        // =================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 獲取所有需要的元素
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsMenu = document.getElementById('settingsMenu');
+            const switchThemeBtn = document.getElementById('switchThemeBtn');
+            const clearCacheBtn = document.getElementById('clearCacheBtn');
+            const searchInput = document.getElementById('searchInput');
+            const menuItems = document.querySelectorAll('.menu-item');
+
+            // --- 主題設定 ---
+            const savedTheme = localStorage.getItem('theme') || 'dark'; // 預設為深色
+            setTheme(savedTheme);
+
+            switchThemeBtn.addEventListener('click', () => {
+                const currentTheme = localStorage.getItem('theme') || 'dark';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+            });
+
+            // --- 清除暫存 ---
+            clearCacheBtn.addEventListener('click', () => {
+                // 跳出確認視窗，\n 會換行讓訊息更清晰
+                if (window.confirm('確定要清除所有工具的暫存資料嗎？\n這個操作無法復原。')) {
+                    // 如果使用者點擊「確定」，才執行清除操作
+                    localStorage.removeItem('regexToolState'); 
+                    alert('工具暫存資料已清除！');
+                    settingsMenu.classList.remove('show');
+                    
+                    // 如果當前在 Regex 工具頁面，重載它以顯示預設值
+                    if (document.getElementById('regex-tool-mount')) {
+                        loadContent('regex-replacer');
+                    }
+                }
+                // 如果使用者點擊「取消」，則什麼都不做
+            });
+            
+            // --- 設定選單顯示/隱藏 ---
+            settingsBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                settingsMenu.classList.toggle('show');
+            });
+
+            window.addEventListener('click', () => {
+                if (settingsMenu.classList.contains('show')) {
+                    settingsMenu.classList.remove('show');
+                }
+            });
+            
+            // --- 搜尋功能 ---
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                menuItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                });
+            });
+
+            // --- 選單點擊高亮 ---
+            menuItems.forEach(item => {
+                item.addEventListener('click', (event) => {
+                    menuItems.forEach(el => el.classList.remove('active'));
+                    event.currentTarget.classList.add('active');
+                });
+            });
+
+            // --- 初始載入頁面內容 ---
+            loadContent('intro');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# 忽略作業系統產生的檔案
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 忽略 IDE 和編輯器產生的設定檔
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# 依賴項目資料夾
+# 可以透過 package.json 和 package-lock.json 重新安裝。
+node_modules/
+
+# 忽略建置輸出資料夾
+dist/
+build/
+.out/
+.next/
+
+# 忽略日誌、暫存檔和快取
+# -----------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tmp/
+temp/
+.cache/
+
+# 忽略環境變數檔案 (包含敏感資訊)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
